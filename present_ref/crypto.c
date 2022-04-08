@@ -15,7 +15,7 @@ static void add_round_key(uint8_t pt[CRYPTO_IN_SIZE], uint8_t roundkey[CRYPTO_IN
     printf("\n");
     printf("%p", (void*) roundkey);
    */
-    for(int i=0;i< 8;i++) {
+    for(uint8_t i=0;i< 8;i++) {
        pt[i] = pt[i] ^ roundkey[i];
    }
    /*
@@ -33,10 +33,8 @@ static uint8_t cpyBit(uint8_t out,uint8_t pos, uint8_t v) {
     return out |= (v << pos);
 }
 
-static uint8_t getBit(uint8_t v[CRYPTO_IN_SIZE], uint8_t bit) {
-    uint8_t byteNo = v[bit/8];
-    bit  = bit%8;
-    return (byteNo >> bit) & 0x1;
+static uint8_t getBit(uint8_t v, uint8_t bit) {
+    return (v >> bit) & 0x1;
 }
 
 static const uint8_t sbox[16] = {
@@ -45,10 +43,11 @@ static const uint8_t sbox[16] = {
 
 static void sbox_layer(uint8_t s[CRYPTO_IN_SIZE])
 {
+
 	// INSERT YOUR CODE HERE AND DELETE THIS COMMENT
-    for(int i=0;i<8;i++) {
+    for(uint8_t i=0;i<8;i++) {
         uint8_t ln = s[i] & 0xf;
-        uint8_t un = (s[i] >> 4) & 0xf;
+        uint8_t un = (s[i] >> 4);
         s[i] = sbox[ln] | (sbox[un] << 4);
     }
 
@@ -56,12 +55,13 @@ static void sbox_layer(uint8_t s[CRYPTO_IN_SIZE])
 
 static void pbox_layer(uint8_t s[CRYPTO_IN_SIZE])
 {
+
     uint8_t out[CRYPTO_IN_SIZE] = {0};
 
-        for (int i = 0; i < 64; i++) {
-            uint8_t tmp = getBit(s, i);
-            int j = (i / 4) + (i % 4) * 16;
-            s[j] = cpyBit(s[j], j, tmp);
+        for (uint8_t i = 0; i < 64; i++) {
+            uint8_t tmp = getBit(s[i/8], i%8);
+            uint8_t j = (i / 4) + (i % 4) * 16;
+            cpyBit(out[j], j, tmp);
         }
 
 }
