@@ -7,30 +7,16 @@ static void print_uint8_t(uint8_t n[CRYPTO_IN_SIZE]) {
 
 static void add_round_key(uint8_t pt[CRYPTO_IN_SIZE], uint8_t roundkey[CRYPTO_IN_SIZE])
 {
-	// INSERT YOUR CODE HERE AND DELETE THIS COMMENT
-   /*
-    printf("New Round Key \n");
-
-    printf("%p", (void*) pt);
-    printf("\n");
-    printf("%p", (void*) roundkey);
-   */
-    for(uint8_t i=0;i< 8;i++) {
+	for(uint8_t i=0;i< 8;i++) {
        pt[i] = pt[i] ^ roundkey[i];
    }
-   /*
-    print_uint8_t(pt);
-   printf("%p", (void*) pt);
-   printf("\n \n");
-    */
 }
 
 static uint8_t cpyBit(uint8_t out,uint8_t pos, uint8_t v) {
-    //uint8_t mask = ~(1<<bit);
-    //v = (v & mask);
-    //return (v | (bitv << bit));
     out &= ~(1 << pos);
-    return out |= (v << pos);
+    out |= (v << pos);
+    return out;
+
 }
 
 static uint8_t getBit(uint8_t v, uint8_t bit) {
@@ -47,24 +33,37 @@ static void sbox_layer(uint8_t s[CRYPTO_IN_SIZE])
 	// INSERT YOUR CODE HERE AND DELETE THIS COMMENT
     for(uint8_t i=0;i<8;i++) {
         uint8_t ln = s[i] & 0xf;
-        uint8_t un = (s[i] >> 4);
+        uint8_t un = (s[i] >> 4) & 0xf;
         s[i] = sbox[ln] | (sbox[un] << 4);
     }
 
 }
 
+static void printArry(uint8_t arr[8]) {
+
+    printf("\n [");
+    for(uint8_t i=0;i<8;i++) {
+        printf("%hhx", arr[i]);
+        printf(", ");
+    }
+    printf("] \n");
+}
 static void pbox_layer(uint8_t s[CRYPTO_IN_SIZE])
 {
-
-    uint8_t out[CRYPTO_IN_SIZE] = {0};
+    uint8_t out[8] = {0};
 
         for (uint8_t i = 0; i < 64; i++) {
             uint8_t tmp = getBit(s[i/8], i%8);
             uint8_t j = (i / 4) + (i % 4) * 16;
-            cpyBit(out[j], j, tmp);
+            out[j/8] = cpyBit(out[j/8], j%8, tmp);
         }
-
+   for(int i=0;i<8;i++) {
+       s[i] = out[i];
+   }
 }
+
+
+
 
 static void update_round_key(uint8_t key[CRYPTO_KEY_SIZE], const uint8_t r)
 {

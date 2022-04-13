@@ -17,6 +17,22 @@
 static uint8_t pt[CRYPTO_IN_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static uint8_t key[CRYPTO_KEY_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} ;
 
+
+static uint8_t cpyBit(uint8_t out,uint8_t pos, uint8_t v) {
+    //uint8_t mask = ~(1<<pos);
+    //out = (out & mask);
+    //return (out | (v << pos));
+
+
+    out &= ~(1 << pos);
+    // printf("\n outBit = ");
+    out |= (v << pos);
+    //printf("%hhx",out);
+
+    //printf("\n");
+    return out;
+
+}
 //  45 84 22 7B 38 C1 79 55
 int main()
 {
@@ -24,19 +40,14 @@ int main()
     uint64_t begin = 0, end = 0, duration;
     int c = -1;
 
-
-
-
-    printf("%c", pt[0]);
+    printf("\n\n Hello worl");
     crypto_func(pt, key);
-
+    printf("\n\n");
     for(uint8_t i=0;i<CRYPTO_IN_SIZE;i++) {
         printf("%hhx", pt[i]);
         printf(", ");
     }
 
-    printf("Hello world \n");
-    printf("%p", (void*) pt);
     printf("\n");
 
 
