@@ -1,10 +1,8 @@
 #include "crypto.h"
 
 #include <stdio.h>
-static void print_uint8_t(uint8_t n[CRYPTO_IN_SIZE]) {
 
-}
-
+// Add round key
 static void add_round_key(uint8_t pt[CRYPTO_IN_SIZE], uint8_t roundkey[CRYPTO_IN_SIZE])
 {
 	for(uint8_t i=0;i< 8;i++) {
@@ -12,6 +10,7 @@ static void add_round_key(uint8_t pt[CRYPTO_IN_SIZE], uint8_t roundkey[CRYPTO_IN
    }
 }
 
+// Copy bit function
 static uint8_t cpyBit(uint8_t out,uint8_t pos, uint8_t v) {
     out &= ~(1 << pos);
     out |= (v << pos);
@@ -19,18 +18,19 @@ static uint8_t cpyBit(uint8_t out,uint8_t pos, uint8_t v) {
 
 }
 
+// Get bit function
 static uint8_t getBit(uint8_t v, uint8_t bit) {
     return (v >> bit) & 0x1;
 }
 
+// Sbox
 static const uint8_t sbox[16] = {
 	0xC, 0x5, 0x6, 0xB, 0x9, 0x0, 0xA, 0xD, 0x3, 0xE, 0xF, 0x8, 0x4, 0x7, 0x1, 0x2,
 };
 
+// Sbox layer function
 static void sbox_layer(uint8_t s[CRYPTO_IN_SIZE])
 {
-
-	// INSERT YOUR CODE HERE AND DELETE THIS COMMENT
     for(uint8_t i=0;i<8;i++) {
         uint8_t ln = s[i] & 0xf;
         uint8_t un = (s[i] >> 4) & 0xf;
@@ -39,15 +39,7 @@ static void sbox_layer(uint8_t s[CRYPTO_IN_SIZE])
 
 }
 
-static void printArry(uint8_t arr[8]) {
-
-    printf("\n [");
-    for(uint8_t i=0;i<8;i++) {
-        printf("%hhx", arr[i]);
-        printf(", ");
-    }
-    printf("] \n");
-}
+// Pbox layer function
 static void pbox_layer(uint8_t s[CRYPTO_IN_SIZE])
 {
     uint8_t out[8] = {0};
@@ -57,13 +49,11 @@ static void pbox_layer(uint8_t s[CRYPTO_IN_SIZE])
             uint8_t j = (i / 4) + (i % 4) * 16;
             out[j/8] = cpyBit(out[j/8], j%8, tmp);
         }
+	// Copy out to state
    for(int i=0;i<8;i++) {
        s[i] = out[i];
    }
 }
-
-
-
 
 static void update_round_key(uint8_t key[CRYPTO_KEY_SIZE], const uint8_t r)
 {
