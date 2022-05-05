@@ -146,7 +146,7 @@ static void add_round_key(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t roundKe
 {
     for(uint8_t i=0;i< 64;i++) {
         state_bs[i] ^= (-getBit(roundKey[i/8], i%8));
-        //uint8_t val = getBit(roundKey[i/8], i%8);s
+        //uint8_t val = getBit(roundKey[i/8], i%8);
         /*
         if(val == 1) {
             state_bs[i] ^= 0xffffffff;
@@ -159,19 +159,22 @@ static void add_round_key(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t roundKe
 
 
 uint32_t sbox0(uint32_t in_0,uint32_t in_1, uint32_t in_2, uint32_t in_3) {
-    return (in_0 ^ in_1 & in_2 ^ in_2 ^ in_3);
+    return (in_0 ^  in_2 & (~in_1) ^ in_3);
 }
 
-uint32_t sbox1(uint32_t in_0, uint32_t in_1, uint32_t in_2, uint32_t in_3) {
-    return (in_0 & in_2 & in_1 ^ in_0 & in_3 & in_1 ^ in_3 &in_1 ^ in_1 ^ in_0 & in_2 & in_3 ^in_2 & in_3 ^ in_3);
+uint32_t sbox1(uint32_t x0, uint32_t x1, uint32_t x2, uint32_t x3) {
+    //return (in_0 & in_2 & in_1 ^ in_0 & in_3 & in_1 ^ in_3 &in_1 ^ in_1 ^ in_0 & in_2 & in_3 ^in_2 & in_3 ^ in_3);
+    return (x1 &( ~(x0 & (x2 ^ x3) ^ x3)) ^ x3 & ~(x2 & (~x0)));
 }
 
-uint32_t sbox2(uint32_t in_0, uint32_t in_1, uint32_t in_2, uint32_t in_3) {
-    return ~(in_0 & in_1 ^ in_0 & in_3 & in_1 ^ in_3 & in_1 ^ in_2 ^ in_0 & in_3 ^ in_0 & in_2 & in_3 ^ in_3);
+uint32_t sbox2(uint32_t x0, uint32_t x1, uint32_t x2, uint32_t x3) {
+    //return ~(in_0 & in_1 ^ in_0 & in_3 & in_1 ^ in_3 & in_1 ^ in_2 ^ in_0 & in_3 ^ in_0 & in_2 & in_3 ^ in_3);
+    return ~(  x0 & x1 &(~x3) ^ x3 & ~(x1 ^ x0 & (~x2)) ^ x2);
 }
 
-uint32_t sbox3(uint32_t in_0, uint32_t in_1, uint32_t in_2, uint32_t in_3) {
-    return ~(in_1 & in_2 & in_0 ^ in_1 & in_3 & in_0 ^ in_2 & in_3 & in_0 ^ in_0 ^ in_1 ^ in_1 & in_2 ^ in_3);
+uint32_t sbox3(uint32_t x0, uint32_t x1, uint32_t x2, uint32_t x3) {
+    //return ~(in_1 & in_2 & in_0 ^ in_1 & in_3 & in_0 ^ in_2 & in_3 & in_0 ^ in_0 ^ in_1 ^ in_1 & in_2 ^ in_3);
+    return ~( x1 & ~(x0 & (x2 ^x3)) ^  x2 & (x3 & x0 ^ x1) ^ x0 ^ x3);
 }
 
 
@@ -190,6 +193,7 @@ static void sbox_layer(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT])
     }
 
     // loop unrolling
+    /*
     state_bs[0] = state_out[0];
     state_bs[1] = state_out[1];
     state_bs[2] = state_out[2];
@@ -254,7 +258,8 @@ static void sbox_layer(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT])
     state_bs[61] = state_out[61];
     state_bs[62] = state_out[62];
     state_bs[63] = state_out[63];
-    //memcpy (state_bs, state_out, CRYPTO_IN_SIZE_BIT * sizeof(uint32_t));
+     */
+    memcpy (state_bs, state_out, CRYPTO_IN_SIZE_BIT * sizeof(uint32_t));
 
     /*
     for(uint8_t i=0;i<64;i++) {
@@ -271,10 +276,11 @@ static void pbox_layer(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT]) {
         uint8_t out = b/4 + (b % 4) * 16;
         state_out[out] = state_bs[b];
     }
-    // memcpy (state, state_out, CRYPTO_IN_SIZE_BIT * sizeof(uint32_t));
+    memcpy (state_bs, state_out, CRYPTO_IN_SIZE_BIT * sizeof(uint32_t));
 
 
     // function unrolling
+    /*
     state_bs[0] = state_out[0];
     state_bs[1] = state_out[1];
     state_bs[2] = state_out[2];
@@ -339,6 +345,7 @@ static void pbox_layer(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT]) {
     state_bs[61] = state_out[61];
     state_bs[62] = state_out[62];
     state_bs[63] = state_out[63];
+     */
     /*
     for(uint8_t i=0;i<64;i++) {
         state[i] = state_out[i];

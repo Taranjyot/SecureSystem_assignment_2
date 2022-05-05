@@ -65,7 +65,6 @@ def unpack_le(s):
 
 for tv in range(TV_KEY_COUNT):
     key = bytes(tv_key[tv * KEY_SIZE:(tv + 1) * KEY_SIZE])
-    print("== Key " + str(tv) + " = " + key.hex())
 
     # Send 16 plaintext blocks
     for j in range(BITSLICE_CNT):
