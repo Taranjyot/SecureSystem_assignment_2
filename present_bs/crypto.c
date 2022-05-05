@@ -32,6 +32,36 @@ static void enslice(const uint8_t pt[CRYPTO_IN_SIZE * BITSLICE_WIDTH], bs_reg_t 
 
 }
 
+/*
+static void ensliceKey(const uint8_t key[CRYPTO_KEY_SIZE], uint8_t state_bs[CRYPTO_IN_SIZE])
+{
+    uint32_t i ;
+    for (i = 0 ; i < 32; ++i) {
+        uint32_t by = i >> 3; // find the number of lines (8 per line)
+        uint32_t b = (uint32_t)(i % 8); // find the number of columns
+        state_bs[i] =  (pt[by +   0] >> b & 0x1) <<  0 | (pt[by +   8] >> b & 0x1) <<  1 |
+                       (pt[by +  16] >> b & 0x1) <<  2 | (pt[by +  24] >> b & 0x1) <<  3 |
+                       (pt[by +  32] >> b & 0x1) <<  4 | (pt[by +  40] >> b & 0x1) <<  5 |
+                       (pt[by +  48] >> b & 0x1) <<  6 | (pt[by +  56] >> b & 0x1) <<  7 |
+                       (pt[by +  64] >> b & 0x1) <<  8 | (pt[by +  72] >> b & 0x1) <<  9 |
+                       (pt[by +  80] >> b & 0x1) << 10 | (pt[by +  88] >> b & 0x1) << 11 |
+                       (pt[by +  96] >> b & 0x1) << 12 | (pt[by + 104] >> b & 0x1) << 13 |
+                       (pt[by + 112] >> b & 0x1) << 14 | (pt[by + 120] >> b & 0x1) << 15 |
+                       (pt[by + 128] >> b & 0x1) << 16 | (pt[by + 136] >> b & 0x1) << 17 |
+                       (pt[by + 144] >> b & 0x1) << 18 | (pt[by + 152] >> b & 0x1) << 19 |
+                       (pt[by + 160] >> b & 0x1) << 20 | (pt[by + 168] >> b & 0x1) << 21 |
+                       (pt[by + 176] >> b & 0x1) << 22 | (pt[by + 184] >> b & 0x1) << 23 |
+                       (pt[by + 192] >> b & 0x1) << 24 | (pt[by + 200] >> b & 0x1) << 25 |
+                       (pt[by + 208] >> b & 0x1) << 26 | (pt[by + 216] >> b & 0x1) << 27 |
+                       (pt[by + 224] >> b & 0x1) << 28 | (pt[by + 232] >> b & 0x1) << 29 |
+                       (pt[by + 240] >> b & 0x1) << 30 | (pt[by + 248] >> b & 0x1) << 31;
+    }
+
+
+}
+
+*/
+
 /**
  * Bring bitsliced buffer into normal form
  * @param state_bs Input: Bitsliced state
@@ -55,6 +85,11 @@ static void unslice(const bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t pt[CRYP
             counter = 0;
         }
     }
+}
+
+
+static uint8_t getBit(uint8_t v, uint8_t bit) {
+    return (v >> bit) & 0x1;
 }
 
 /**
@@ -102,11 +137,23 @@ static void update_round_key(uint8_t key[CRYPTO_KEY_SIZE], const uint8_t r)
 	key[2] ^= r >> 1;
 }
 
-static void add_round_key(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t roundkKey[CRYPTO_KEY_SIZE])
+static void add_round_key(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t roundKey[CRYPTO_IN_SIZE])
 {
     for(uint8_t i=0;i< 64;i++) {
-        state_bs[i] = state_bs[i] ^ roundkKey[i];
+        uint8_t val = getBit(roundKey[i/8], i%8);
+        if(val == 1) {
+            state_bs[i] ^= 0xffffffff;
+        } else {
+            state_bs[i] ^= 0;
+        }
     }
+}
+static void add_round_key1(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t roundKey[CRYPTO_IN_SIZE_BIT])
+{
+    for(uint8_t i=0;i< 64;i++) {
+        state_bs[i] = state_bs[i] ^ roundKey[i];
+    }
+
 }
 
 uint32_t sbox0(uint32_t in_0,uint32_t in_1, uint32_t in_2, uint32_t in_3) {
@@ -118,11 +165,11 @@ uint32_t sbox1(uint32_t in_0, uint32_t in_1, uint32_t in_2, uint32_t in_3) {
 }
 
 uint32_t sbox2(uint32_t in_0, uint32_t in_1, uint32_t in_2, uint32_t in_3) {
-    return (in_0 & in_1 ^ in_0 & in_3 & in_1 ^ in_3 & in_1 ^ in_2 ^ in_0 & in_3 ^ in_0 & in_2 & in_3 ^ in_3 ^ 1);
+    return ~(in_0 & in_1 ^ in_0 & in_3 & in_1 ^ in_3 & in_1 ^ in_2 ^ in_0 & in_3 ^ in_0 & in_2 & in_3 ^ in_3);
 }
 
 uint32_t sbox3(uint32_t in_0, uint32_t in_1, uint32_t in_2, uint32_t in_3) {
-    return (in_1 & in_2 & in_0 ^ in_1 & in_3 & in_0 ^ in_2 & in_3 & in_0 ^ in_0 ^ in_1 ^ in_1 & in_2 ^ in_3 ^ 1);
+    return ~(in_1 & in_2 & in_0 ^ in_1 & in_3 & in_0 ^ in_2 & in_3 & in_0 ^ in_0 ^ in_1 ^ in_1 & in_2 ^ in_3);
 }
 
 
@@ -139,9 +186,7 @@ static void sbox_layer(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT])
         state_out[s*4 + 2] = sbox2(in_0, in_1, in_2, in_3);
         state_out[s*4 + 3] = sbox3(in_0, in_1, in_2, in_3);
     }
-
-
-    for(uint32_t i=0;i<64;i++) {
+    for(uint8_t i=0;i<64;i++) {
         state_bs[i] = state_out[i];
     }
 
@@ -153,51 +198,37 @@ static void pbox_layer(bs_reg_t state[CRYPTO_IN_SIZE_BIT]) {
         uint8_t out = b/4 + (b % 4) * 16;
         state_out[out] = state[b];
     }
-
-
-    for(uint32_t i=0;i<64;i++) {
+    for(uint8_t i=0;i<64;i++) {
         state[i] = state_out[i];
     }
 
 }
 void crypto_func(uint8_t pt[CRYPTO_IN_SIZE * BITSLICE_WIDTH], uint8_t key[CRYPTO_KEY_SIZE])
 {
-    /*
-    for(int i=0;i < 256;i++) {
-        printf("%hhx", pt[i]);
-        printf(", ");
-        if(i %BITSLICE_WIDTH ==0) {
-            printf("\n");
-        }
-    }
-
-    printf("\n Hello");
-    */
-
 
 	// State buffer and additional backbuffer of same size (you can remove the backbuffer if you do not need it)
 	bs_reg_t state[CRYPTO_IN_SIZE_BIT];
-	bs_reg_t bb[CRYPTO_IN_SIZE_BIT];
-	
+    //uint8_t key_enslice[CRYPTO_IN_SIZE_BIT];
+
 	uint8_t round;
 	uint8_t i = 0;
-	
-	// Bring into bitslicing form
 
+	// Bring into bitslicing form
+    //ensliceKey(key+2,key_enslice);
 	enslice(pt, state);
 	
 	// INSERT PRESENT MAIN CODE HERE AND DELETE THIS COMMENT //
 
     for(i = 1; i <= 31; i++)
     {
-        add_round_key(state, key+2);
+        add_round_key(state, key +2)
         sbox_layer(state);
         pbox_layer(state);
         update_round_key(key, i);
     }
-    add_round_key(state, key+2);
+    add_round_key(state, key +2);
 
-	// Convert back to normal form
+    // Convert back to normal form
 	unslice(state, pt);
 
 }
