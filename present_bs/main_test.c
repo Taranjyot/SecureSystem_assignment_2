@@ -15,6 +15,7 @@
 
 
 static uint8_t pt[CRYPTO_IN_SIZE * BITSLICE_WIDTH] = {0x45, 0x84, 0x22, 0x7B, 0x38, 0xC1, 0x79, 0x55};
+static uint8_t pt2[CRYPTO_IN_SIZE * BITSLICE_WIDTH] = {  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 static uint8_t key[CRYPTO_KEY_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,};
 
 
@@ -42,7 +43,7 @@ int main()
 
     printf("\n\n Hello worl");
   //  WriteByteArray( arrayOne, "arrayOne" );
-    crypto_func(pt, key);
+    //crypto_func(pt, key);
 
     /*
     printf("\n\n");
@@ -51,11 +52,13 @@ int main()
         printf(", ");
     }
      */
+    // pt[0] = &pt2;
+    memcpy (pt, pt2, 256 * sizeof(uint8_t));
     int i;
     for (i = 0; i < 8; i++)
     {
         if (i > 0) printf(":");
-        printf("%02X", pt[i]);
+        printf("0x%02X", pt[i]);
     }
     printf("\n");
 

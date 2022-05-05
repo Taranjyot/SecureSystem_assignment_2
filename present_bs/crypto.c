@@ -88,6 +88,7 @@ static void unslice(const bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t pt[CRYP
 }
 
 
+// get the bit v is the value and bit is the bit we want to fetch
 static uint8_t getBit(uint8_t v, uint8_t bit) {
     return (v >> bit) & 0x1;
 }
@@ -137,24 +138,25 @@ static void update_round_key(uint8_t key[CRYPTO_KEY_SIZE], const uint8_t r)
 	key[2] ^= r >> 1;
 }
 
+/*
+ *  @param state_bs roundKey
+ *  adds round key  to the expanded state_bs text
+ */
 static void add_round_key(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t roundKey[CRYPTO_IN_SIZE])
 {
     for(uint8_t i=0;i< 64;i++) {
-        uint8_t val = getBit(roundKey[i/8], i%8);
+        state_bs[i] ^= (-getBit(roundKey[i/8], i%8));
+        //uint8_t val = getBit(roundKey[i/8], i%8);s
+        /*
         if(val == 1) {
             state_bs[i] ^= 0xffffffff;
         } else {
             state_bs[i] ^= 0;
         }
+         */
     }
 }
-static void add_round_key1(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT], uint8_t roundKey[CRYPTO_IN_SIZE_BIT])
-{
-    for(uint8_t i=0;i< 64;i++) {
-        state_bs[i] = state_bs[i] ^ roundKey[i];
-    }
 
-}
 
 uint32_t sbox0(uint32_t in_0,uint32_t in_1, uint32_t in_2, uint32_t in_3) {
     return (in_0 ^ in_1 & in_2 ^ in_2 ^ in_3);
@@ -186,23 +188,164 @@ static void sbox_layer(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT])
         state_out[s*4 + 2] = sbox2(in_0, in_1, in_2, in_3);
         state_out[s*4 + 3] = sbox3(in_0, in_1, in_2, in_3);
     }
+
+    // loop unrolling
+    state_bs[0] = state_out[0];
+    state_bs[1] = state_out[1];
+    state_bs[2] = state_out[2];
+    state_bs[3] = state_out[3];
+    state_bs[4] = state_out[4];
+    state_bs[5] = state_out[5];
+    state_bs[6] = state_out[6];
+    state_bs[7] = state_out[7];
+    state_bs[8] = state_out[8];
+    state_bs[9] = state_out[9];
+    state_bs[10] = state_out[10];
+    state_bs[11] = state_out[11];
+    state_bs[12] = state_out[12];
+    state_bs[13] = state_out[13];
+    state_bs[14] = state_out[14];
+    state_bs[15] = state_out[15];
+    state_bs[16] = state_out[16];
+    state_bs[17] = state_out[17];
+    state_bs[18] = state_out[18];
+    state_bs[19] = state_out[19];
+    state_bs[20] = state_out[20];
+    state_bs[21] = state_out[21];
+    state_bs[22] = state_out[22];
+    state_bs[23] = state_out[23];
+    state_bs[24] = state_out[24];
+    state_bs[25] = state_out[25];
+    state_bs[26] = state_out[26];
+    state_bs[27] = state_out[27];
+    state_bs[28] = state_out[28];
+    state_bs[29] = state_out[29];
+    state_bs[30] = state_out[30];
+    state_bs[31] = state_out[31];
+    state_bs[32] = state_out[32];
+    state_bs[33] = state_out[33];
+    state_bs[34] = state_out[34];
+    state_bs[35] = state_out[35];
+    state_bs[36] = state_out[36];
+    state_bs[37] = state_out[37];
+    state_bs[38] = state_out[38];
+    state_bs[39] = state_out[39];
+    state_bs[40] = state_out[40];
+    state_bs[41] = state_out[41];
+    state_bs[42] = state_out[42];
+    state_bs[43] = state_out[43];
+    state_bs[44] = state_out[44];
+    state_bs[45] = state_out[45];
+    state_bs[46] = state_out[46];
+    state_bs[47] = state_out[47];
+    state_bs[48] = state_out[48];
+    state_bs[49] = state_out[49];
+    state_bs[50] = state_out[50];
+    state_bs[51] = state_out[51];
+    state_bs[52] = state_out[52];
+    state_bs[53] = state_out[53];
+    state_bs[54] = state_out[54];
+    state_bs[55] = state_out[55];
+    state_bs[56] = state_out[56];
+    state_bs[57] = state_out[57];
+    state_bs[58] = state_out[58];
+    state_bs[59] = state_out[59];
+    state_bs[60] = state_out[60];
+    state_bs[61] = state_out[61];
+    state_bs[62] = state_out[62];
+    state_bs[63] = state_out[63];
+    //memcpy (state_bs, state_out, CRYPTO_IN_SIZE_BIT * sizeof(uint32_t));
+
+    /*
     for(uint8_t i=0;i<64;i++) {
         state_bs[i] = state_out[i];
     }
-
+    */
 }
 
-static void pbox_layer(bs_reg_t state[CRYPTO_IN_SIZE_BIT]) {
+
+// implements p box layer
+static void pbox_layer(bs_reg_t state_bs[CRYPTO_IN_SIZE_BIT]) {
     bs_reg_t state_out[64] = {0};
     for (uint8_t b = 0; b < 64; b++) {
         uint8_t out = b/4 + (b % 4) * 16;
-        state_out[out] = state[b];
+        state_out[out] = state_bs[b];
     }
+    // memcpy (state, state_out, CRYPTO_IN_SIZE_BIT * sizeof(uint32_t));
+
+
+    // function unrolling
+    state_bs[0] = state_out[0];
+    state_bs[1] = state_out[1];
+    state_bs[2] = state_out[2];
+    state_bs[3] = state_out[3];
+    state_bs[4] = state_out[4];
+    state_bs[5] = state_out[5];
+    state_bs[6] = state_out[6];
+    state_bs[7] = state_out[7];
+    state_bs[8] = state_out[8];
+    state_bs[9] = state_out[9];
+    state_bs[10] = state_out[10];
+    state_bs[11] = state_out[11];
+    state_bs[12] = state_out[12];
+    state_bs[13] = state_out[13];
+    state_bs[14] = state_out[14];
+    state_bs[15] = state_out[15];
+    state_bs[16] = state_out[16];
+    state_bs[17] = state_out[17];
+    state_bs[18] = state_out[18];
+    state_bs[19] = state_out[19];
+    state_bs[20] = state_out[20];
+    state_bs[21] = state_out[21];
+    state_bs[22] = state_out[22];
+    state_bs[23] = state_out[23];
+    state_bs[24] = state_out[24];
+    state_bs[25] = state_out[25];
+    state_bs[26] = state_out[26];
+    state_bs[27] = state_out[27];
+    state_bs[28] = state_out[28];
+    state_bs[29] = state_out[29];
+    state_bs[30] = state_out[30];
+    state_bs[31] = state_out[31];
+    state_bs[32] = state_out[32];
+    state_bs[33] = state_out[33];
+    state_bs[34] = state_out[34];
+    state_bs[35] = state_out[35];
+    state_bs[36] = state_out[36];
+    state_bs[37] = state_out[37];
+    state_bs[38] = state_out[38];
+    state_bs[39] = state_out[39];
+    state_bs[40] = state_out[40];
+    state_bs[41] = state_out[41];
+    state_bs[42] = state_out[42];
+    state_bs[43] = state_out[43];
+    state_bs[44] = state_out[44];
+    state_bs[45] = state_out[45];
+    state_bs[46] = state_out[46];
+    state_bs[47] = state_out[47];
+    state_bs[48] = state_out[48];
+    state_bs[49] = state_out[49];
+    state_bs[50] = state_out[50];
+    state_bs[51] = state_out[51];
+    state_bs[52] = state_out[52];
+    state_bs[53] = state_out[53];
+    state_bs[54] = state_out[54];
+    state_bs[55] = state_out[55];
+    state_bs[56] = state_out[56];
+    state_bs[57] = state_out[57];
+    state_bs[58] = state_out[58];
+    state_bs[59] = state_out[59];
+    state_bs[60] = state_out[60];
+    state_bs[61] = state_out[61];
+    state_bs[62] = state_out[62];
+    state_bs[63] = state_out[63];
+    /*
     for(uint8_t i=0;i<64;i++) {
         state[i] = state_out[i];
     }
-
+    */
 }
+
 void crypto_func(uint8_t pt[CRYPTO_IN_SIZE * BITSLICE_WIDTH], uint8_t key[CRYPTO_KEY_SIZE])
 {
 
@@ -221,7 +364,7 @@ void crypto_func(uint8_t pt[CRYPTO_IN_SIZE * BITSLICE_WIDTH], uint8_t key[CRYPTO
 
     for(i = 1; i <= 31; i++)
     {
-        add_round_key(state, key +2)
+        add_round_key(state, key +2);
         sbox_layer(state);
         pbox_layer(state);
         update_round_key(key, i);
